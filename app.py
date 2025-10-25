@@ -32,11 +32,11 @@ def add_bg_from_local(image_file):
     )
 
 # Add your background image (make sure it's in the same folder)
-add_bg_from_local("background.jpg")
+add_bg_from_local("background1.jpg")
 
 # --- Title ---
 st.markdown(
-    "<h1 style='text-align: center; color: white;'>🕵️ DetectoNews</h1>",
+    "<h1 style='text-align: center; color: white;'>DetectoNews</h1>",
     unsafe_allow_html=True
 )
 st.markdown(
