@@ -19,22 +19,26 @@ def clean_text(text):
 # ========== SAFE LOAD FUNCTION ==========
 def safe_load(path):
     if not os.path.exists(path):
+        st.warning(f"⚠️ File not found: {path}")
         return None
     try:
         return joblib.load(path)
-    except:
-        with open(path, "rb") as f:
-            return pickle.load(f)
+    except Exception:
+        try:
+            with open(path, "rb") as f:
+                return pickle.load(f)
+        except Exception as e:
+            st.error(f"❌ Failed to load {path}: {e}")
+            return None
 
 # ========== LOAD MODELS ==========
 @st.cache_resource
 def load_models():
     tfidf = safe_load("tfidf_vectorizer.pkl")
-    svm = safe_load("svm_model.pkl")
-    nb = safe_load("nb_model.pkl")
+    svm = safe_load("svm_model_v1.pkl")
+    nb = safe_load("naive_bayes_model_v2.pkl")
     bert_xgb = safe_load("bert_xgb_model.pkl")  # wrapper ko ignore karna hai
     le = safe_load("label_encoder.joblib")
-
     return tfidf, svm, nb, bert_xgb, le
 
 tfidf, svm_model, nb_model, bert_xgb_model, label_encoder = load_models()
@@ -53,7 +57,7 @@ def predict_model(model, X, label_encoder=None):
         if label_encoder is not None:
             try:
                 pred_label = label_encoder.inverse_transform([pred_label])[0]
-            except:
+            except Exception:
                 pass
         return pred_label, conf
     except Exception as e:
@@ -61,7 +65,7 @@ def predict_model(model, X, label_encoder=None):
 
 # ========== STREAMLIT UI ==========
 st.title("📰 Fake News Detection (Ensemble-Based App)")
-st.write("This app predicts whether a news article is **Fake or Real** using three models — SVM, Naive Bayes, and BERT+XGBoost. The final prediction is made using an ensemble voting approach.")
+st.write("Predicts whether a news article is **Fake or Real** using SVM, Naive Bayes, and BERT+XGBoost — then combines them via ensemble voting.")
 
 text_input = st.text_area("Enter News Article Text", height=250)
 
@@ -87,7 +91,7 @@ if st.button("Predict"):
         with col3:
             st.metric("BERT+XGBoost Prediction", bert_pred, f"Confidence: {bert_conf:.2f}" if bert_conf else "")
 
-        # ========== ENSEMBLE LOGIC ==========
+        # Ensemble voting
         predictions = [svm_pred, nb_pred, bert_pred]
         valid_preds = [p for p in predictions if not str(p).startswith("Error")]
 
